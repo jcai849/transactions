@@ -1,4 +1,4 @@
-run:
+Runs with OpenBSD 7.5, ksh, curl, jq
 
 transactions [days_prior]
 -- days_prior defaults to 14
