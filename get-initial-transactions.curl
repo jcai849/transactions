@@ -1,0 +1,12 @@
+silent
+get
+url            https://api.akahu.io/v1/transactions
+variable       %START
+variable       %END
+variable       %USER_TOKEN
+variable       %APP_TOKEN
+expand-data    "start={{START}}"
+expand-data    "end={{END}}"
+header         "accept: application/json"
+expand-header  "Authorization: Bearer {{USER_TOKEN}}"
+expand-header  "X-Akahu-ID: {{APP_TOKEN}}"

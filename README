@@ -1,0 +1,8 @@
+run:
+
+transactions [days_prior]
+-- days_prior defaults to 14
+
+requires file "tokens" from akahu in $PWD; example file:
+APP_TOKEN=app_token_sofjweojf
+USER_TOKEN=user_token_osfweofj
