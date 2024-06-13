@@ -3,15 +3,15 @@
 # transactions [days_prior]
 # days_prior defaults to 14
 
-set -ae
+set -a
 
 . ./tokens
 
 END_EPOCH=$(date +%s)
 DAYS_PRIOR_AS_SECS=60*60*24*${1:-14}
-START_EPOCH=$((${END_EPOCH}-${DAYS_PRIOR_AS_SECS}))
-START=$(date -j -zUTC -f%s +%F ${START_EPOCH})
-END=$(date -j -zUTC -f%s +%F ${END_EPOCH})
+START_EPOCH=$((END_EPOCH-DAYS_PRIOR_AS_SECS))
+START=$(date -j -zUTC -f%s +%F "${START_EPOCH}")
+END=$(date -j -zUTC -f%s +%F "${END_EPOCH}")
 
 cursor() { jq -n -r --argjson response "${1}" '$response.cursor.next' || exit 1 ; }
 accumulate_transactions() {
@@ -21,13 +21,13 @@ accumulate_transactions() {
 		return 0
 	fi
 	SUCCESSIVE_RESPONSE=$(curl -K get-initial-transactions.curl \
-                              -K cursor.curl || exit 1)
+                              -K cursor.curl) || exit 1
 	COMBINED_RESPONSE=$(jq -n -f combine-response.jq \
 		--argjson successive_response "${SUCCESSIVE_RESPONSE}" \
-		--argjson initial_response "${INITIAL_RESPONSE}" \
-		|| exit 1)
+		--argjson initial_response "${INITIAL_RESPONSE}") ||
+		exit 1
 	accumulate_transactions "${COMBINED_RESPONSE}" || exit 1
 }
 
-INITIAL_RESPONSE=$(curl -K get-initial-transactions.curl || exit 1)
+INITIAL_RESPONSE=$(curl -K get-initial-transactions.curl) || exit 1
 accumulate_transactions "${INITIAL_RESPONSE}" | jq '.items' || exit 1
