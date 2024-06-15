@@ -1,0 +1,10 @@
+eda: filter to see each of the transaction types
+transform: gen_payee: merchant to payee for payments/eftpos
+transform: gen_postings: category to EXPENSE account for payments
+compile: account for arbitrary number of postings
+akahu: see what /accounts yields
+transform: gen_postings: accounts in transfers
+transform: gen_postings: merge accounts for naming
+transform: gen_postings: mapping named beancount accounts to bank accounts
+transform: remove extraneous transactions in transfers
+beancount import: skip existing transactions

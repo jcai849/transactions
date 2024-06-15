@@ -1,7 +1,7 @@
 Runs with OpenBSD 7.5, ksh, curl, jq
 
 transactions [days_prior]
--- days_prior defaults to 14
+-- days_prior defaults to 10
 
 requires file "tokens" from akahu in $PWD; example file:
 APP_TOKEN=app_token_sofjweojf
