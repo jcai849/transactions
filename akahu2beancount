@@ -47,7 +47,7 @@ iterate_transactions() {
         iterate_transactions "${successive_response}" || return 1
 }
 cursor() {
-	jq -n -r --argjson response "${1}" '$response.cursor.next'
+	jq -n -r --argjson response "$1" '$response.cursor.next'
 }
 
 accounts() {
@@ -69,7 +69,7 @@ compile() {
 
 cache() {
 	command="$1"
-	command_as_file="$(echo "${command}" | sed 's/ /-/')"
+	command_as_file="$(echo "${command}" | sed 's/ /-/')" || return 1
 	extractfile="$(date +%Y-%m-%d)-${command_as_file}.json.data"
 	if [ -f "$extractfile" ]; then
 		cat "$extractfile" 
