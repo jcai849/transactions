@@ -28,9 +28,9 @@ load() {
 
 transactions() {
 	dates=$(jq -nf date.jq) || return 1
-	START=$(echo "$dates" | jq .start)
+	START=$(echo "$dates" | jq -r .start)
 	export START
-	END=$(echo "$dates" | jq .end)
+	END=$(echo "$dates" | jq -r .end)
 	export END
 
 	initial_response=$(curl -K get-initial-transactions.curl) || return 1
