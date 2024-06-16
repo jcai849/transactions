@@ -1,0 +1,8 @@
+silent
+get
+url            https://api.akahu.io/v1/accounts
+variable       %USER_TOKEN
+variable       %APP_TOKEN
+header         "accept: application/json"
+expand-header  "Authorization: Bearer {{USER_TOKEN}}"
+expand-header  "X-Akahu-ID: {{APP_TOKEN}}"

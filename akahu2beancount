@@ -1,0 +1,81 @@
+#!/bin/sh
+
+set -eu
+
+DAYS_PRIOR="${1:-10}" # TODO: ensure > 0
+export DAYS_PRIOR
+TOKENSFILE="${2:-./tokens}"
+export TOKENSFILE
+
+main() {
+	{ load || return 1; } |
+	{ transform || return 1; } |
+	compile 
+}
+
+load() { 
+	set -a
+	# shellcheck disable=SC1090
+	. "$TOKENSFILE" || return 1
+	set +a
+
+	{ # wrap output from both transactions and accounts as json object
+	  { cache "transactions ${DAYS_PRIOR}" || return 1; } | combine &&
+	  { cache accounts || return 1; } | combine ||
+	  return 1;
+	} | jq -s '{transactions: .[0], accounts: .[1]}'
+}
+
+transactions() {
+	dates=$(jq -nf date.jq) || return 1
+	START=$(echo "$dates" | jq .start)
+	export START
+	END=$(echo "$dates" | jq .end)
+	export END
+
+	initial_response=$(curl -K get-initial-transactions.curl) || return 1
+	iterate_transactions "${initial_response}"
+}
+iterate_transactions() {
+        echo "$1"
+	CURSOR=$(cursor "$1") || return 1
+        export CURSOR
+        [ "${CURSOR}" = null ] && return 0
+
+        successive_response=$(curl -K get-initial-transactions.curl \
+                              -K cursor.curl) || return 1
+        iterate_transactions "${successive_response}" || return 1
+}
+cursor() {
+	jq -n -r --argjson response "${1}" '$response.cursor.next'
+}
+
+accounts() {
+	curl -K get-accounts.curl
+}
+
+
+combine() {
+	jq -s 'reduce .[].items as $item ([]; . + $item)'
+}
+
+transform() {
+	jq -f transform.jq
+}
+
+compile() {
+	jq -fr compile.jq
+}
+
+cache() {
+	command="$1"
+	command_as_file="$(echo "${command}" | sed 's/ /-/')"
+	extractfile="$(date +%Y-%m-%d)-${command_as_file}.json.data"
+	if [ -f "$extractfile" ]; then
+		cat "$extractfile" 
+	else 
+		{ ${command} || return 1; } | tee "${extractfile}"
+	fi
+}
+
+main

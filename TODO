@@ -1,10 +1,48 @@
-eda: filter to see each of the transaction types
-transform: gen_payee: merchant to payee for payments/eftpos
-transform: gen_postings: category to EXPENSE account for payments
+- bring in accounts
+
+{.merchant.name} as payee, "" otherwise
+DIRECT DEBIT, EFTPOS, DEBIT`:
+		Expenses:{.category.personal_finance.name}:{.category.name}
+	OR	Expenses:Uncategorised if missing
+	Amount: -{.amount}
+		Assets:{.account_type}:{.account_provider}:{.account_name}
+	Amount: {.amount}
+
+join /accounts info to id to get:
+	.connection.name => .account_provider
+	.type		 => .account_type
+	.name            => .account_name
+	.formatted_account => .account_number
+
+TRANSFER, STANDING ORDER: 
+		Assets:{.account_type}: ... as above -- provide function
+		Assets:{.account_type}: ... receiving account (match on .meta.other_account)
+
+		sometimes duplicated (STANDING ORDER always duplicated); remove positive valued transactions
+
+PAYMENT:
+		payee: {.meta.other_account} narration: {.description}
+		Assets:{.account_type}:...
+		IF .meta.other_account within accounts:
+			Assets:{.other_account}..
+			& remove CREDIT to other account
+		ELSE
+			Expenses:{.description}
+
+CREDIT:
+		Income:{cleaned .description; maybe mapping}
+		Assets:{joined account on _account}
+
+LOAN:
+	~ /INTEREST/ -> Expense
+	~ /PRINCIPAL/ -> -Liability
+	sometimes duplicated; remove positive valued transactions. Seems like two types, e.g. 
+	1. "date": "2024-06-05T12:00:00.000Z", "description": "INTEREST MORTGAGE REPAYMENT", "amount": 465.58,
+	2. "date": "2024-06-06T11:03:38.000Z", "description": "12-3126-0418326-91 001INTEREST LOAN REPAYMENT", "amount": -465.58,
+	Is this just (1.) taking money from the checking account and (2) actually applying it to the loan? Seems so, see difference in balances.
+
+
+
+general: sort date ascending
 compile: account for arbitrary number of postings
-akahu: see what /accounts yields
-transform: gen_postings: accounts in transfers
-transform: gen_postings: merge accounts for naming
-transform: gen_postings: mapping named beancount accounts to bank accounts
-transform: remove extraneous transactions in transfers
-beancount import: skip existing transactions
+beancount import: skip existing transactions when importing

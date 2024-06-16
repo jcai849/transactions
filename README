@@ -1,8 +1,9 @@
-Runs with OpenBSD 7.5, ksh, curl, jq
+akahu2beancount [days_prior tokensfile]
+	days_prior defaults to 10
+	tokensfile defaults to ./tokens
 
-transactions [days_prior]
--- days_prior defaults to 10
+Depends: POSIX sh, curl, jq
 
-requires file "tokens" from akahu in $PWD; example file:
+Example tokens file (from akahu.nz):
 APP_TOKEN=app_token_sofjweojf
 USER_TOKEN=user_token_osfweofj
