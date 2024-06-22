@@ -8,22 +8,18 @@ TOKENSFILE="${2:-./tokens}"
 export TOKENSFILE
 
 main() {
-	{ load || return 1; } |
+	{ load transactions ${DAYS_PRIOR} || return 1; } |
 	{ transform || return 1; } #|
 	# compile 
 }
 
-load() { 
+load() {
 	set -a
 	# shellcheck disable=SC1090
 	. "$TOKENSFILE" || return 1
 	set +a
 
-	{ # wrap output from both transactions and accounts as json object
-	  { cache "transactions ${DAYS_PRIOR}" || return 1; } | combine &&
-	  { cache accounts || return 1; } | combine ||
-	  return 1;
-	} | jq -s '{transactions: .[0], accounts: .[1]}'
+	cache $*
 }
 
 transactions() {
@@ -37,7 +33,7 @@ transactions() {
 	iterate_transactions "${initial_response}"
 }
 iterate_transactions() {
-        echo "$1"
+        echo "$1" | jq '.items.[]' || return 1
 	CURSOR=$(cursor "$1") || return 1
         export CURSOR
         [ "${CURSOR}" = null ] && return 0
@@ -51,16 +47,13 @@ cursor() {
 }
 
 accounts() {
-	curl -K get-accounts.curl
+	curl -K get-accounts.curl | jq .items
 }
 
-
-combine() {
-	jq -s 'reduce .[].items as $item ([]; . + $item)'
-}
 
 transform() {
-	jq -f transform.jq
+	jq -f transform.jq \
+		--argjson accounts "$(load accounts)"
 }
 
 compile() {
@@ -69,13 +62,17 @@ compile() {
 
 cache() {
 	command="$1"
-	command_as_file="$(echo "${command}" | sed 's/ /-/')" || return 1
-	extractfile="$(date +%Y-%m-%d)-${command_as_file}.json.data"
-	if [ -f "$extractfile" ]; then
-		cat "$extractfile" 
+	cachefile="$(get_cachefile "${command}")" || return 1
+	if [ -f "$cachefile" ]; then
+		cat "$cachefile"
 	else 
-		{ ${command} || return 1; } | tee "${extractfile}"
+		{ ${command} || return 1; } | tee "${cachefile}"
 	fi
+}
+get_cachefile() {
+	command_as_file="$(echo "${1}" | sed 's/ /-/')" || return 1
+	echo "$(date +%Y-%m-%d)-${command_as_file}.json.data"
+
 }
 
 main
