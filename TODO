@@ -1,31 +1,5 @@
 Fill out postings by linking accounts as per:
 
-{
-  "postings": [
-    {
-      "account": {
-        "type": "Checking", // "merchant" // "uncategorised"
-	IF merchant
-		"category": "A",
-		"name":  "ofj"
-	ELIF uncategorised
-		"particulars", etc
-	ELSE
-        "institution": "X",
-        "name": "X",
-	"number": "8238-138-1341",
-        "currency": "NZD"
-      },
-      "amount": -1,
-    },
-    {
-      "account": { as above },
-      "amount":  1,
-    }
-  ]
-}
-
-
 {.merchant.name} as payee, "" otherwise
 DIRECT DEBIT, EFTPOS, DEBIT`:
 		Expenses:{.category.personal_finance.name}:{.category.name}
