@@ -8,7 +8,7 @@ TOKENSFILE="${2:-./tokens}"
 export TOKENSFILE
 
 main() {
-	{ load transactions ${DAYS_PRIOR} || return 1; } |
+	load
 	{ transform || return 1; } #|
 	# compile 
 }
@@ -19,9 +19,11 @@ load() {
 	. "$TOKENSFILE" || return 1
 	set +a
 
-	cache $*
+	cached_pipe accounts
+	trap "rm '$(get_pipe accounts)'" EXIT
+	cached_pipe transactions "${DAYS_PRIOR}"
+	trap "rm '$(get_pipe accounts)' '$(get_pipe transactions)'" EXIT
 }
-
 transactions() {
 	dates=$(jq -nf date.jq) || return 1
 	START=$(echo "$dates" | jq -r .start)
@@ -47,27 +49,31 @@ cursor() {
 }
 
 accounts() {
-	curl -K get-accounts.curl | jq .items
+	curl -K get-accounts.curl | jq -f account-format.jq
 }
 
 
 transform() {
-	jq -f transform.jq \
-		--argjson accounts "$(load accounts)"
+	jq -f transform.jq --argjson accounts "$(cat $(get_pipe accounts))" <"$(get_pipe transactions)"
 }
 
 compile() {
 	jq -fr compile.jq
 }
 
-cache() {
+cached_pipe() {
 	command="$1"
 	cachefile="$(get_cachefile "${command}")" || return 1
+	pipe="$(get_pipe "${command}")" || return 1
+	mkfifo "$pipe"
 	if [ -f "$cachefile" ]; then
 		cat "$cachefile"
 	else 
 		{ ${command} || return 1; } | tee "${cachefile}"
-	fi
+	fi >"$pipe" &
+}
+get_pipe() {
+	echo "$1-pipe"
 }
 get_cachefile() {
 	command_as_file="$(echo "${1}" | sed 's/ /-/')" || return 1

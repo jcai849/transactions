@@ -1,4 +1,5 @@
 silent
+fail
 get
 url            https://api.akahu.io/v1/accounts
 variable       %USER_TOKEN
