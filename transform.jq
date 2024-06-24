@@ -1,21 +1,15 @@
 def attach_principal_account:
-	JOIN(INDEX($accounts[]; ._account); .; ._account;
-		{transaction: .[0], postings: [.[1]]}) |
-	.postings[0] += {amount: .transaction.amount};
-def add_postings:
-	if .transaction.type == "TRANSFER" then # see TODO, match with STANDIN ORDER as well
-		JOIN(INDEX($accounts[]; .number); .;
-		     .transaction.meta.other_account;
-		     {
-		       transaction: .[0].transaction,
-		       postings: (.[0].postings + [.[1]])
-		     }) |
-		     .postings[1] += {amount: -.transaction.amount}
+	JOIN(INDEX($accounts[]; ._account); .; ._account; .[1]) + {amount} ;
+
+def attach_accessory_account:
+	if .type == "TRANSFER" // .type == "STANDING ORDER" then
+		(JOIN(INDEX($accounts[]; .number); .; .meta.other_account; .[1])
+		// { type: "Expenses", number: .meta.other_account } )
+		+ {amount: -.amount}
+	else {}
 	# elif .PAYMENT or CREDIT
 	# elif LOAN regexes
 	# else expenses
 	end;
 
-attach_principal_account |
-add_postings #| thin_transactions |  alter_postings | format_to_beancount
-
+{transaction: ., postings: [attach_principal_account, attach_accessory_account]} #| thin_transactions |  alter_postings | format_to_beancount
