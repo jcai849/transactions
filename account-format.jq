@@ -1,7 +1,7 @@
 .items | map_values({
 	_account: ._id,
 	type: null,
-	registry: .connection.name,
+	group: .connection.name,
 	name: .name,
 	number: .formatted_account,
 	category: .type,

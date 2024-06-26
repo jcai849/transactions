@@ -15,5 +15,7 @@ LOAN:
 	~ /INTEREST/ -> Expense
 	~ /PRINCIPAL/ -> -Liability
 
+Description: US 500 FUND -> Assets:S&P500
+
 beancount import: skip existing transactions when importing
 auto-account setup if flag provided
