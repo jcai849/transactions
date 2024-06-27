@@ -20,8 +20,10 @@ load() {
 	set +a
 
 	cached_pipe accounts
+	# shellcheck disable=SC2064
 	trap "rm '$(get_pipe accounts)'" EXIT
 	cached_pipe transactions "${DAYS_PRIOR}"
+	# shellcheck disable=SC2064
 	trap "rm '$(get_pipe accounts)' '$(get_pipe transactions)'" EXIT
 }
 transactions() {
@@ -54,7 +56,7 @@ accounts() {
 
 
 transform() {
-	jq -f transform.jq --argjson accounts "$(cat $(get_pipe accounts))" <"$(get_pipe transactions)"
+	jq -f transform.jq --argjson accounts "$(cat "$(get_pipe accounts)")" <"$(get_pipe transactions)"
 }
 
 compile() {
