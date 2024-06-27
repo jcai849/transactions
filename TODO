@@ -1,13 +1,7 @@
 Fill out postings by linking accounts as per:
 
 CREDIT:
-	Income:{cleaned .description; maybe mapping}
-	Assets:{joined account on _account}
-
 	~ AIR NEW ZEALAND -> + Expenses:Tax, Expenses:ACC, etc.
-
-
-Duplication in: LOAN, TRANSFER, STANDING ORDER, PAYMENT--CREDIT pairs; most can be deduplicated by removing positive valued transactions
 
 LOAN:
 	~ /INTEREST/ -> Expense
