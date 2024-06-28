@@ -48,8 +48,7 @@ def attach_debit_account:
 	elif .type == "INTEREST" then attach_interest_account
 	elif ([.type == ("EFTPOS", "DEBIT", "DIRECT DEBIT")] | any) then
 		attach_expense_account
-	else halt_error
-	end
+	else halt_error end
 	+ {amount: -.amount};
 
 def attach_uncategorised_income_account:
@@ -79,19 +78,44 @@ def attach_credit_account:
 			type: "Income", group: "Interest",
 			subgroup: .group, name, amount: -.amount
 		}
-	else halt_error
-	end;
+	else halt_error end;
 
 def attach_accessory_account:
 	if .amount < 0 then
 		attach_debit_account
 	elif .amount > 0 then
 		attach_credit_account
-	else empty
-	end;
+	else empty end;
 
 def thin_transactions:
 	if .postings | length < 2 then empty end;
+
+def classify_loan:
+	if .transaction.description | contains("PRINCIPAL") then .
+	elif .transaction.description | contains("INTEREST") then
+		.postings[1].type |= "Expenses"
+	else halt_error end;
+
+def stock_name:
+    if . = "US 500 FUND" then "USF" else halt_error end;
+
+def classify_investment:
+	.postings[1].type = "Assets" |
+        .postings[1].group = "NZX" |
+        .postings[1].subgroup = (.transaction.description | stock_name)
+	                        + ".NZ" |
+        .postings[1].name = (.transaction.description | stock_name);
+
+def alter_postings:
+	if .type == "LOAN" then
+		classify_loan
+	elif .meta.other_account? == "01-0505-0807117-03" then
+		# SMARTSHARES
+		classify_investment
+#	elif .meta.other_account? == "02-0100-0587283-07" then
+#		# AIR NZ
+#		include_taxes
+	end;
 
 {
 	transaction: .,
@@ -100,5 +124,4 @@ def thin_transactions:
 		attach_accessory_account
 	]
 }
-| thin_transactions
-#  alter_postings | format_to_beancount
+| thin_transactions | alter_postings #| format_to_beancount
