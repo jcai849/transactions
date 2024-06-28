@@ -38,12 +38,13 @@ def attach_interest_account:
 
 def attach_debit_account:
 	if ([.type == ("TRANSFER", "PAYMENT", "STANDING ORDER", "CREDIT")] | any) then
-		if (.meta | has("other_account")) then
-			attach_other_account(.meta.other_account)
-		else null end // attach_expense_account
+		try attach_other_account(.meta.other_account)
+		// attach_expense_account
 	elif .type == "FEE" then attach_fee_account
 	elif .type == "LOAN" then
-		attach_other_account(.description | asb_loan_account_from_description)
+		attach_other_account(.description
+		                     | asb_loan_account_from_description)
+		// empty
 	elif .type == "INTEREST" then attach_interest_account
 	elif ([.type == ("EFTPOS", "DEBIT", "DIRECT DEBIT")] | any) then
 		attach_expense_account
@@ -54,21 +55,30 @@ def attach_debit_account:
 def attach_uncategorised_income_account:
 	{ type: "Income", group: "Uncategorised", amount};
 
+def external_account:
+	# true if not able to attach the other accouunt
+	try (attach_other_account(.meta.other_account) | not)
+	catch true;
+
 def attach_credit_account:
-	# returning duplicates of debit accounts as empty, for future thinning
-	if ([.type == ("TRANSFER", "PAYMENT", "STANDING ORDER", "CREDIT")] | any) then
-		if (.meta | has("other_account") | not)
-		or (attach_other_account(.meta.other_account) == null) then
+	# duplicated debit accounts as empty, for future thinning on length
+	if ([.type == ("TRANSFER", "PAYMENT",
+	               "STANDING ORDER", "EFTPOS")] | any) then
+		if external_account then
 			attach_uncategorised_income_account
-		else empty
-		end
-	elif .type == "EFTPOS" then
+		else empty end
+	elif .type == "CREDIT" then
+		if .meta.other_account? == null then empty
+		elif external_account then
 			attach_uncategorised_income_account
+		else empty end
 	elif .type == "LOAN" then empty
 	elif .type == "INTEREST" then
-		attach_principal_account |{
+		attach_principal_account
+		| {
 			type: "Income", group: "Interest",
-			subgroup: .group, name, amount: -.amount}
+			subgroup: .group, name, amount: -.amount
+		}
 	else halt_error
 	end;
 
@@ -83,5 +93,12 @@ def attach_accessory_account:
 def thin_transactions:
 	if .postings | length < 2 then empty end;
 
-{transaction: ., postings: [attach_principal_account, attach_accessory_account]} | thin_transactions
+{
+	transaction: .,
+	postings: [
+		attach_principal_account,
+		attach_accessory_account
+	]
+}
+| thin_transactions
 #  alter_postings | format_to_beancount
