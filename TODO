@@ -1,13 +1,4 @@
-Fill out postings by linking accounts as per:
-
-CREDIT:
-	~ AIR NEW ZEALAND -> + Expenses:Tax, Expenses:ACC, etc.
-
-LOAN:
-	~ /INTEREST/ -> Expense
-	~ /PRINCIPAL/ -> -Liability
-
-Description: US 500 FUND -> Assets:S&P500
+~ AIR NEW ZEALAND -> + Expenses:Tax, Expenses:ACC, etc.
 
 beancount import: skip existing transactions when importing
-auto-account setup if flag provided
+auto-account setup if flag provided, with initial balance and padding

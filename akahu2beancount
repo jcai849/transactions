@@ -9,8 +9,7 @@ export TOKENSFILE
 
 main() {
 	load
-	{ transform || return 1; } #|
-	# compile 
+	{ transform || return 1; } | compile
 }
 
 load() {

@@ -52,7 +52,7 @@ def attach_debit_account:
 	+ {amount: -.amount};
 
 def attach_uncategorised_income_account:
-	{ type: "Income", group: "Uncategorised", amount};
+	{ type: "Income", group: "Uncategorised", amount: -.amount};
 
 def external_account:
 	# true if not able to attach the other accouunt
@@ -93,7 +93,7 @@ def thin_transactions:
 def classify_loan:
 	if .transaction.description | contains("PRINCIPAL") then .
 	elif .transaction.description | contains("INTEREST") then
-		.postings[1].type |= "Expenses"
+		.postings[1].type = "Expenses"
 	else halt_error end;
 
 def stock_name:
@@ -102,17 +102,15 @@ def stock_name:
 def classify_investment:
 	.postings[1].type = "Assets" |
         .postings[1].group = "NZX" |
-        .postings[1].subgroup = (.transaction.description | stock_name)
-	                        + ".NZ" |
         .postings[1].name = (.transaction.description | stock_name);
 
 def alter_postings:
-	if .type == "LOAN" then
+	if .transaction.type == "LOAN" then
 		classify_loan
-	elif .meta.other_account? == "01-0505-0807117-03" then
+	elif .transaction.meta.other_account? == "01-0505-0807117-03" then
 		# SMARTSHARES
 		classify_investment
-#	elif .meta.other_account? == "02-0100-0587283-07" then
+#	elif .transaction.meta.other_account? == "02-0100-0587283-07" then
 #		# AIR NZ
 #		include_taxes
 	end;
@@ -124,4 +122,4 @@ def alter_postings:
 		attach_accessory_account
 	]
 }
-| thin_transactions | alter_postings #| format_to_beancount
+| thin_transactions | alter_postings
