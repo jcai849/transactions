@@ -110,10 +110,17 @@ def alter_postings:
 	elif .transaction.meta.other_account? == "01-0505-0807117-03" then
 		# SMARTSHARES
 		classify_investment
-#	elif .transaction.meta.other_account? == "02-0100-0587283-07" then
-#		# AIR NZ
-#		include_taxes
 	end;
+def make_account:
+        [.type?, .group?, .subgroup?, .name?] | map(select(.))
+        | map((.[0:1] | ascii_upcase) + .[1:]
+                | gsub(" "; "-")
+                | gsub(","; "-")
+                | gsub("&"; "-")
+                | gsub("'"; "")
+                | gsub("\\("; "")
+                | gsub("\\)"; "")
+        );
 
 {
 	transaction: .,
@@ -122,4 +129,6 @@ def alter_postings:
 		attach_accessory_account
 	]
 }
-| thin_transactions | alter_postings
+| thin_transactions
+| alter_postings
+| .postings |= map(. + {account: make_account})

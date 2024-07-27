@@ -1,4 +1,2 @@
-~ AIR NEW ZEALAND -> + Expenses:Tax, Expenses:ACC, etc.
-
+include end-of-day balances
 beancount import: skip existing transactions when importing
-auto-account setup if flag provided, with initial balance and padding

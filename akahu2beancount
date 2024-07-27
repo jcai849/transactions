@@ -8,22 +8,29 @@ TOKENSFILE="${2:-./tokens}"
 export TOKENSFILE
 
 main() {
-	load
+	extract
 	{ transform || return 1; } | compile
 }
 
-load() {
+extract() {
 	set -a
 	# shellcheck disable=SC1090
 	. "$TOKENSFILE" || return 1
 	set +a
 
-	cached_pipe accounts
-	# shellcheck disable=SC2064
-	trap "rm '$(get_pipe accounts)'" EXIT
-	cached_pipe transactions "${DAYS_PRIOR}"
-	# shellcheck disable=SC2064
-	trap "rm '$(get_pipe accounts)' '$(get_pipe transactions)'" EXIT
+	mkfifo accounts.pipe transactions.pipe
+	trap 'rm accounts.pipe transactions.pipe' EXIT
+	load accounts >accounts.pipe &
+	load transactions "${DAYS_PRIOR}" >transactions.pipe &
+}
+load() {
+	command="$1"
+	cachefile="${command}-extract-$(date +%Y-%m-%d).json.data" || return 1
+	if [ -f "$cachefile" ]; then
+		cat "$cachefile"
+	else 
+		{ ${command} "$@" || return 1; } | tee "${cachefile}"
+	fi
 }
 transactions() {
 	dates=$(jq -nf date.jq) || return 1
@@ -50,36 +57,16 @@ cursor() {
 }
 
 accounts() {
-	curl -K get-accounts.curl | jq -f account-format.jq
+	curl -K get-accounts.curl | jq -f account-extract.jq
 }
 
 
 transform() {
-	jq -f transform.jq --argjson accounts "$(cat "$(get_pipe accounts)")" <"$(get_pipe transactions)"
+	jq -f transform.jq --argjson accounts "$(cat accounts.pipe)" <transactions.pipe
 }
 
 compile() {
-	jq -fr compile.jq
-}
-
-cached_pipe() {
-	command="$1"
-	cachefile="$(get_cachefile "${command}")" || return 1
-	pipe="$(get_pipe "${command}")" || return 1
-	mkfifo "$pipe"
-	if [ -f "$cachefile" ]; then
-		cat "$cachefile"
-	else 
-		{ ${command} || return 1; } | tee "${cachefile}"
-	fi >"$pipe" &
-}
-get_pipe() {
-	echo "$1-pipe"
-}
-get_cachefile() {
-	command_as_file="$(echo "${1}" | sed 's/ /-/')" || return 1
-	echo "$(date +%Y-%m-%d)-${command_as_file}.json.data"
-
+	jq -sf accumulate.jq | jq -fr compile.jq
 }
 
 main
